@@ -53,7 +53,7 @@ add_custom_target(
 
 set(
     SOURCES
-    mempool.cpp
+    mempool.cc
     Opal.cc
     opalMemNIC.cc
 )
@@ -97,4 +97,5 @@ add_executable(
     ${SOURCES}
 )
 _sst_compile_link(lib${CMAKE_PROJECT_NAME}.so)
+
 # -------------------- SST EXECUTABLES --------------------
