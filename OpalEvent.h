@@ -1,8 +1,8 @@
-// Copyright 2009-2019 NTESS. Under the terms
+// Copyright 2009-2020 NTESS. Under the terms
 // of Contract DE-NA0003525 with NTESS, the U.S.
 // Government retains certain rights in this software.
-// 
-// Copyright (c) 2009-2019, NTESS
+//
+// Copyright (c) 2009-2020, NTESS
 // All rights reserved.
 //
 // Portions are copyright of other developers:
@@ -17,26 +17,25 @@
 #define _OPALEVENT_H
 
 namespace SST {
-    namespace OpalComponent {
+namespace OpalComponent {
 
-        class OpalEvent : public SST::Event {
-        public:
-            typedef std::vector<char> dataVec;
+class OpalEvent : public SST::Event
+{
+public:
+    typedef std::vector<char> dataVec;
+    OpalEvent() : SST::Event() { }
+    dataVec payload;
 
-            OpalEvent() : SST::Event() {}
+public:
+    void serialize_order(SST::Core::Serialization::serializer &ser)  override {
+        Event::serialize_order(ser);
+        ser & payload;
+    }
 
-            dataVec payload;
+    ImplementSerializable(SST::OpalComponent::OpalEvent);
+};
 
-        public:
-            void serialize_order(SST::Core::Serialization::serializer &ser) override {
-                Event::serialize_order(ser);
-                ser & payload;
-            }
-
-            ImplementSerializable(SST::OpalComponent::OpalEvent);
-        };
-
-    } // namespace SimpleComponent
+} // namespace SimpleComponent
 } // namespace SST
 
 #endif /* _SIMPLECOMPONENTEVENT_H */
