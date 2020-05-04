@@ -54,7 +54,7 @@ add_custom_target(
 
 set(
     SOURCES
-    mempool.cc
+    mempool.cpp
     Opal.cc
     opalMemNIC.cc
 )

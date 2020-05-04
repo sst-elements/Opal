@@ -19,23 +19,22 @@
 namespace SST {
 namespace OpalComponent {
 
-class OpalEvent : public SST::Event
-{
+class OpalEvent : public SST::Event {
 public:
-    typedef std::vector<char> dataVec;
-    OpalEvent() : SST::Event() { }
-    dataVec payload;
+  typedef std::vector<char> dataVec;
+  OpalEvent() : SST::Event() {}
+  dataVec payload;
 
 public:
-    void serialize_order(SST::Core::Serialization::serializer &ser)  override {
-        Event::serialize_order(ser);
-        ser & payload;
-    }
+  void serialize_order(SST::Core::Serialization::serializer &ser) override {
+    Event::serialize_order(ser);
+    ser &payload;
+  }
 
-    ImplementSerializable(SST::OpalComponent::OpalEvent);
+  ImplementSerializable(SST::OpalComponent::OpalEvent);
 };
 
-} // namespace SimpleComponent
+} // namespace OpalComponent
 } // namespace SST
 
 #endif /* _SIMPLECOMPONENTEVENT_H */
