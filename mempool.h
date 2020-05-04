@@ -10,7 +10,6 @@
 // distribution.
 //
 
-
 /* Author: Amro Awad
  * E-mail: amro.awad@ucf.edu
  */
@@ -20,140 +19,146 @@
 
 #include "Opal_Event.h"
 
+#include <cmath>
 #include <list>
 #include <map>
-#include <cmath>
-
 
 typedef struct reqresponse {
-	uint64_t address;
-	int pages;
-	int status;
+  uint64_t address;
+  int pages;
+  int status;
 
-}REQRESPONSE;
-
+} REQRESPONSE;
 
 // This defines a physical frame of size 4KB by default
-class Frame{
+class Frame {
 
-	public:
-		// Constructor
-		Frame() { starting_address = 0; metadata = 0;}
+public:
+  // Constructor
+  Frame() {
+    starting_address = 0;
+    metadata = 0;
+  }
 
-		// Constructor with paramteres
-		Frame(uint64_t st, uint64_t md) { starting_address = st; metadata = 0;}
+  // Constructor with paramteres
+  Frame(uint64_t st, uint64_t /*md*/) {
+    starting_address = st;
+    metadata = 0;
+  }
 
-		~Frame(){}
+  ~Frame() = default;
 
-		// The starting address of the frame
-		uint64_t starting_address;
+  // The starting address of the frame
+  uint64_t starting_address;
 
-		// This will be used to store information about current allocation
-		int metadata;
+  // This will be used to store information about current allocation
+  int metadata;
 
-		int frame_number;
-
+  int frame_number;
 };
-
 
 // This class defines a memory pool
 
-class Pool{
+class Pool {
 
-	public:
+public:
+  // Constructor for pool
+  Pool(Params parmas, SST::OpalComponent::MemType mem_type, int id);
 
-		//Constructor for pool
-		Pool(Params parmas, SST::OpalComponent::MemType mem_type, int id);
+  ~Pool() {
+    /*			while(!freelist.empty()) {
+                                    Frame* frame = freelist.front();
+                                    freelist.erase(freelist.begin());
+                                    delete frame;
+                            }
+    */
+    std::map<uint64_t, Frame *>::iterator it;
+    for (it = alloclist.begin(); it != alloclist.end(); it++) {
+      Frame *frame = it->second;
+      delete frame;
+    }
+  }
 
-		~Pool() {
-/*			while(!freelist.empty()) {
-				Frame* frame = freelist.front();
-				freelist.erase(freelist.begin());
-				delete frame;
-			}
-*/
-			std::map<uint64_t, Frame*>::iterator it;
-			for(it=alloclist.begin();it!=alloclist.end();it++) {
-				Frame* frame = it->second;
-				delete frame;
-			}
-		}
+  void finish() {}
 
-		void finish() {}
+  // The size of the memory pool in KBs
+  uint32_t size;
 
-		// The size of the memory pool in KBs
-		uint32_t size;
+  // The starting address of the memory pool
+  uint64_t start;
 
-		// The starting address of the memory pool
-		uint64_t start;
+  // Allocate N contigiuous frames, returns the starting address if successfull,
+  // or -1 if it fails!
+  REQRESPONSE allocate_frame(int N);
 
-		// Allocate N contigiuous frames, returns the starting address if successfull, or -1 if it fails!
-		REQRESPONSE allocate_frame(int N);
+  // Allocate 'size' contigiuous memory, returns a structure with starting
+  // address and number of frames allocated
+  REQRESPONSE allocate_frames(int pages);
 
-		// Allocate 'size' contigiuous memory, returns a structure with starting address and number of frames allocated
-		REQRESPONSE allocate_frames(int pages);
+  REQRESPONSE allocate_frame_address(uint64_t address, int N);
 
-		REQRESPONSE allocate_frame_address(uint64_t address, int N);
+  // Freeing N frames starting from Address X, this will return -1 if we find
+  // that these frames were not allocated
+  REQRESPONSE deallocate_frame(uint64_t X, int N);
 
-		// Freeing N frames starting from Address X, this will return -1 if we find that these frames were not allocated
-		REQRESPONSE deallocate_frame(uint64_t X, int N);
+  // Deallocate 'size' contigiuous memory starting from physical address
+  // 'starting_pAddress', returns a structure which indicates success or not
+  REQRESPONSE deallocate_frames(int size, uint64_t starting_pAddress);
 
-		// Deallocate 'size' contigiuous memory starting from physical address 'starting_pAddress', returns a structure which indicates success or not
-		REQRESPONSE deallocate_frames(int size, uint64_t starting_pAddress);
+  bool isAllocated(uint64_t address);
 
-		bool isAllocated(uint64_t address);
+  // Current number of free frames
+  int freeframes() { return freelist.size(); }
 
-		// Current number of free frames
-		int freeframes() { return freelist.size(); }
+  // Frame size in KBs
+  int frsize;
 
-		// Frame size in KBs
-		int frsize;
+  // Total number of frames
+  int num_frames;
 
-		//Total number of frames
-		int num_frames;
+  // real size of the memory pool
+  uint32_t real_size;
 
-		//real size of the memory pool
-		uint32_t real_size;
+  // number of free frames
+  int available_frames;
 
-		//number of free frames
-		int available_frames;
+  void set_memPool_type(SST::OpalComponent::MemType _memType) {
+    memType = _memType;
+  }
 
-		void set_memPool_type(SST::OpalComponent::MemType _memType) { memType = _memType; }
+  SST::OpalComponent::MemType get_memPool_type() { return memType; }
 
-		SST::OpalComponent::MemType get_memPool_type() { return memType; }
+  void set_memPool_tech(SST::OpalComponent::MemTech _memTech) {
+    memTech = _memTech;
+  }
 
-		void set_memPool_tech(SST::OpalComponent::MemTech _memTech) { memTech = _memTech; }
+  SST::OpalComponent::MemTech get_memPool_tech() { return memTech; }
 
-		SST::OpalComponent::MemTech get_memPool_tech() { return memTech; }
+  void setMemID(int id) { poolId = id; }
 
-		void setMemID(int id) { poolId = id; }
+  int getMemID() { return poolId; }
 
-		int getMemID() { return poolId; }
+  void build_mem();
 
-		void build_mem();
+  void profileStats(int stat, int value);
 
-		void profileStats(int stat, int value);
+private:
+  Output *output;
 
-	private:
+  // memory pool id
+  int poolId;
 
-		Output *output;
+  // shared or local
+  SST::OpalComponent::MemType memType;
 
-		//memory pool id
-		int poolId;
+  // Memory technology
+  SST::OpalComponent::MemTech memTech;
 
-		//shared or local
-		SST::OpalComponent::MemType memType;
+  // The list of free frames
+  std::list<uint64_t> freelist;
 
-		//Memory technology
-		SST::OpalComponent::MemTech memTech;
+  // std::map<uint64_t, int> freelist_index;
 
-		// The list of free frames
-		std::list<uint64_t> freelist;
-
-		//std::map<uint64_t, int> freelist_index;
-
-		// The list of allocated frames --- the key is the starting physical address
-		std::map<uint64_t, Frame*> alloclist;
-
+  // The list of allocated frames --- the key is the starting physical address
+  std::map<uint64_t, Frame *> alloclist;
 };
-
